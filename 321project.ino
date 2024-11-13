@@ -1,9 +1,12 @@
-#define LEDR 11
-#define LEDG 13
-#define LEDB 12
+#include <SoftwareSerial.h>
 
-int analog_input = A0;
-int digital_input = A1;
+SoftwareSerial BTSerial(2, 3); //Red on 2, Black on 3
+
+#define LEDR 13
+#define LEDG 12
+#define LEDB 11
+#define analog_input A0
+#define digital_input A1
 
 void setup() {                
   pinMode(LEDR, OUTPUT);
@@ -12,7 +15,8 @@ void setup() {
   pinMode(analog_input, INPUT);
   pinMode(digital_input, INPUT);
   Serial.begin(9600);
-  Serial.println("KY-038 Noise detection");
+  BTSerial.begin(9600);
+  Serial.print("Ready to accept commands");
 }
 
 int r = 0;
@@ -20,30 +24,42 @@ int g = 0;
 int b = 0;
 
 void loop() {
-  // r = random(0, 255);
-  // g = random(0, 255);
-  // b = random(0, 255);
-  // analogWrite(LEDR, r);
-  // analogWrite(LEDG, g);
-  // analogWrite(LEDB, b);
-  // delay(1000);
 
-  float analog_value;
-  int digital_value;
-    
-  analog_value = analogRead(analog_input); 
-  digital_value = digitalRead(digital_input);
+  if (Serial.available() > 0)
+    BTSerial.write(Serial.read());
+  if (BTSerial.available() > 0)
+    Serial.write(BTSerial.read());
+
+  int analog_value = analogRead(analog_input); 
+  int digital_value = digitalRead(digital_input);
+
+  Serial.print(analog_value);
+
+  // Convert the analog value to voltage for display
+  float voltage = analog_value * (5.0 / 1023.0);
     
   Serial.print("Analog voltage value: "); 
-  Serial.print(analog_value, 4);
-  Serial.print(" V, \t Threshold value: ");
+  Serial.println(voltage);
   
-  if (digital_value == 1) {
-      Serial.println("reached");
-  }
-  else {
-      Serial.println("not yet reached");
-  }
   Serial.println("----------------------------------------------------------------");
-  delay(1000);
+
+  // Change LED color based on sound level
+  if (analog_value < 570) {
+    // Low sound level - Off
+    analogWrite(LEDR, 0);
+    analogWrite(LEDG, 0);
+    analogWrite(LEDB, 0);
+  } else if (analog_value < 800) {
+    // Medium sound level - Green
+    analogWrite(LEDR, 0);
+    analogWrite(LEDG, 255);
+    analogWrite(LEDB, 0);
+  } else {
+    // High sound level - Red
+    analogWrite(LEDR, 255);
+    analogWrite(LEDG, 0);
+    analogWrite(LEDB, 0);
+  }
+
+  delay(100);
 }
